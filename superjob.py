@@ -15,30 +15,31 @@ def parse_superjob_vacancies(programming_languages: tuple, superjob_secret_key: 
     }
     statistic_of_languages = {}
 
-    for i, language in enumerate(programming_languages):
+    for language in programming_languages:
         language_info = {
             'vacancies_found': 0,
             'vacancies_processed': 0,
             'average_salary': 0,
         }
         query_string = {
-            'keyword': programming_languages[i],    # Search Field
+            'keyword': language,                    # Search Field
             'town': '4',                            # Moscow Location
             'catalogues': '48',                     # Разработка, программирование
             'page': 0,
         }
-        response = requests.get(base_url, headers=headers, params=query_string)
-        response.raise_for_status()
-        language_info['vacancies_found'] = response.json()['total']
-        search_results = response.json()['objects']
+        superjob_pages = True
+        all_vacancies = []
 
-        while response.json()['more']:
-            query_string['page'] += 1
+        while superjob_pages:
             response = requests.get(base_url, headers=headers, params=query_string)
             response.raise_for_status()
-            search_results += response.json()['objects']
+            superjob_response = response.json()
+            language_info['vacancies_found'] = superjob_response['total']
+            all_vacancies += superjob_response['objects']
+            superjob_pages = superjob_response['more']
+            query_string['page'] += 1
 
-        for vacancy in search_results:
+        for vacancy in all_vacancies:
             job_salary = fetch_rub_salary_for_superJob(vacancy)
             if job_salary:
                 language_info['vacancies_processed'] += 1
